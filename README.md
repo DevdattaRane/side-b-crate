@@ -4,7 +4,7 @@ A responsive, brutalist-inspired record crate for exploring genres. The square s
 
 ## Run it
 
-Install dependencies with `npm ci`, then run `npm run dev` for local development or `npm run build` to create the production site in `dist/`. Song previews load from the Apple iTunes Search API, so preview lookup needs an internet connection. If browser autoplay is blocked, press the play button on the turntable.
+Install dependencies with `npm ci`, then run `npm run dev` for local development or `npm run build` to create the production site in `dist/`. Original album covers and song previews load from the Apple iTunes Search API, so they need an internet connection. The ambient jazz toggle generates a quiet chord loop in the browser and starts only after a click; this avoids unexpected autoplay.
 
 Previews are streamed, not downloaded. Each loaded track links to its Apple Music/iTunes listing and the player credits iTunes. Apple's [Search API terms](https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/iTuneSearchAPI/) govern use of preview audio and artwork.
 

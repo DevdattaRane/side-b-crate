@@ -23,11 +23,11 @@ function DraggableDisc({record}) {
   return <span ref={ref} className={`vinyl-disc ${isDragging?'disc-dragging':''}`} style={{'--cover':record.color}} role="button" tabIndex={0} aria-label={`Drag ${record.title} to the turntable`} />;
 }
 
-function RecordSleeve({record,index,selected,onSelect}) {
+function RecordSleeve({record,index,selected,onSelect,artwork}) {
   return <div className={`record ${selected?'selected':''}`} style={{'--cover':record.color,zIndex:index+1}}>
     <DraggableDisc record={record}/>
-    <button type="button" className="cover-art" aria-label={`Play ${record.title} by ${record.artist}, ${record.genre}`} onClick={onSelect}>
-      <span className="cover-glyph">{record.glyph}</span>
+    <button type="button" className={`cover-art ${artwork?'has-art':''}`} style={artwork?{backgroundImage:`url("${artwork}")`,backgroundSize:'cover',backgroundPosition:'center'}:undefined} aria-label={`Play ${record.title} by ${record.artist}, ${record.genre}`} onClick={onSelect}>
+      {!artwork&&<span className="cover-glyph">{record.glyph}</span>}
       <span className="cover-footer"><strong>{record.title}</strong><small>{record.genre} / {record.artist}</small></span>
     </button>
   </div>;
@@ -50,8 +50,11 @@ function Player({state,actions}) {
 function App() {
   const audioRef = useRef(null);
   const requestRef = useRef(0);
+  const jazzContextRef = useRef(null);
+  const jazzTimerRef = useRef(null);
   const [filter,setFilter] = useState('All');
   const [selected,setSelected] = useState(null);
+  const [artworkById,setArtworkById] = useState({});
   const [track,setTrack] = useState(null);
   const [deckStatus,setDeckStatus] = useState('waiting for a record');
   const [note,setNote] = useState('Pull a sleeve from the crate. Drag just the record to the deck—or tap a sleeve—to load a 30-second preview.');
@@ -60,12 +63,63 @@ function App() {
   const [elapsed,setElapsed] = useState('0:00');
   const [toast,setToast] = useState('');
   const [storeLink,setStoreLink] = useState('https://www.apple.com/apple-music/');
+  const [jazzOn,setJazzOn] = useState(false);
   const toastTimer = useRef(null);
 
   const showToast = (message) => {
     setToast(message);
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(()=>setToast(''),2600);
+  };
+
+  const toggleJazz = async () => {
+    if (jazzOn) {
+      clearInterval(jazzTimerRef.current);
+      jazzTimerRef.current=null;
+      jazzContextRef.current?.close();
+      jazzContextRef.current=null;
+      setJazzOn(false);
+      return;
+    }
+    const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+    if (!AudioContextClass) {showToast('Ambient audio is not available in this browser');return;}
+    const context=new AudioContextClass();
+    await context.resume();
+    const master=context.createGain();
+    master.gain.value=.42;
+    master.connect(context.destination);
+    jazzContextRef.current=context;
+    const progression=[
+      {bass:65.41,chord:[261.63,329.63,392,493.88,587.33]},
+      {bass:55,chord:[220,261.63,329.63,392,493.88]},
+      {bass:73.42,chord:[293.66,349.23,440,523.25,659.25]},
+      {bass:49,chord:[246.94,293.66,369.99,440,587.33]},
+    ];
+    let bar=0;
+    const note=(frequency,start,duration,volume,wave='sine')=>{
+      const oscillator=context.createOscillator();
+      const envelope=context.createGain();
+      oscillator.type=wave;
+      oscillator.frequency.setValueAtTime(frequency,start);
+      envelope.gain.setValueAtTime(.0001,start);
+      envelope.gain.exponentialRampToValueAtTime(volume,start+.34);
+      envelope.gain.setValueAtTime(volume*.66,start+duration*.58);
+      envelope.gain.exponentialRampToValueAtTime(.0001,start+duration);
+      oscillator.connect(envelope);envelope.connect(master);
+      oscillator.start(start);oscillator.stop(start+duration+.04);
+    };
+    const playBar=()=>{
+      const phrase=progression[bar%progression.length];
+      const start=context.currentTime+.06;
+      note(phrase.bass,start,3.55,.038,'triangle');
+      phrase.chord.forEach((frequency,index)=>note(frequency,start+index*.075,3.5,.013));
+      note(phrase.chord[3]*2,start+1.72,.78,.004);
+      note(phrase.chord[2]*2,start+2.92,.64,.003);
+      bar++;
+    };
+    playBar();
+    jazzTimerRef.current=window.setInterval(playBar,3900);
+    setJazzOn(true);
   };
 
   const loadRecord = async (record) => {
@@ -83,6 +137,7 @@ function App() {
       const match = (data.results||[]).find(item=>item.previewUrl&&item.trackName.toLowerCase().includes(record.title.toLowerCase().slice(0,Math.min(6,record.title.length)))) || (data.results||[]).find(item=>item.previewUrl);
       if (request!==requestRef.current) return;
       if (!match) throw new Error('no preview found');
+      if (match.artworkUrl100) setArtworkById(current=>({...current,[record.id]:match.artworkUrl100.replace('100x100bb','300x300bb')}));
       setTrack(match); setStoreLink(match.trackViewUrl||match.collectionViewUrl||'https://www.apple.com/apple-music/');
       audio.src = match.previewUrl; audio.load();
       setDeckStatus('record on deck');
@@ -130,6 +185,28 @@ function App() {
     return ()=>{audio.removeEventListener('timeupdate',tick);audio.removeEventListener('ended',ended);audio.removeEventListener('error',failed);clearTimeout(toastTimer.current);};
   },[track]);
 
+  useEffect(()=>{
+    let cancelled=false;
+    Promise.all(records.map(async record=>{
+      try {
+        const term=encodeURIComponent(`${record.title} ${record.artist}`);
+        const response=await fetch(`https://itunes.apple.com/search?term=${term}&entity=song&limit=10&country=IN`);
+        if (!response.ok) return null;
+        const data=await response.json();
+        const match=(data.results||[]).find(item=>item.trackName?.toLowerCase().includes(record.title.toLowerCase().slice(0,Math.min(6,record.title.length)))) || (data.results||[])[0];
+        return match?.artworkUrl100?[record.id,match.artworkUrl100.replace('100x100bb','300x300bb')]:null;
+      } catch {return null;}
+    })).then(entries=>{
+      if (!cancelled) setArtworkById(Object.fromEntries(entries.filter(Boolean)));
+    });
+    return ()=>{cancelled=true;};
+  },[]);
+
+  useEffect(()=>()=>{
+    clearInterval(jazzTimerRef.current);
+    jazzContextRef.current?.close();
+  },[]);
+
   const onDragStart = ({operation}) => {
     const record=records.find(item=>item.id===operation.source.id);
     if (record) setNote(`Record lifted: ${record.title}. Drop it on the turntable to load its preview.`);
@@ -146,14 +223,14 @@ function App() {
       ? [new PointerActivationConstraints.Delay({value:250,tolerance:5})]
       : [new PointerActivationConstraints.Distance({value:5})]}),
   ]} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-    <header className="topbar"><a className="brand" href="#top" aria-label="Side B home">SIDE<span>B</span></a><div className="top-right"><span className="status"><i className="dot"/> crate open / 24-7</span><a href="#dig">start digging ↘</a><span>vol. 001</span></div></header>
+    <header className="topbar"><a className="brand" href="#top" aria-label="Side B home">SIDE<span>B</span></a><div className="top-right"><span className="status"><i className="dot"/> crate open / 24-7</span><button type="button" className={`ambient-toggle ${jazzOn?'is-on':''}`} onClick={toggleJazz} aria-pressed={jazzOn}>♫ {jazzOn?'ambient jazz on':'play soft jazz'}</button><a href="#dig">start digging ↘</a><span>vol. 001</span></div></header>
     <main id="top">
       <section className="hero" aria-labelledby="title"><div className="hero-kicker">a little less scrolling, a little more listening</div><h1 id="title">Find your<br/><span className="outline">side B.</span></h1><div className="hero-bottom"><p>Good music is hiding everywhere. <strong>Dig through the crate</strong>, pull a record, and give something new a spin.</p><span className="scribble">NO SKIP BUTTON<br/>FOR GOOD TASTE ↗</span></div></section>
       <div className="ticker" aria-hidden="true"><div className="ticker-track"><span>Dig deep <b>✳</b> Follow the groove <b>✳</b> Find your side B <b>✳</b> One more spin <b>✳</b> Dig deep <b>✳</b> Follow the groove <b>✳</b> Find your side B <b>✳</b> One more spin <b>✳</b></span><span>Dig deep <b>✳</b> Follow the groove <b>✳</b> Find your side B <b>✳</b> One more spin <b>✳</b> Dig deep <b>✳</b> Follow the groove <b>✳</b> Find your side B <b>✳</b> One more spin <b>✳</b></span></div></div>
       <section className="studio" id="dig" aria-label="Record crate and turntable">
         <div className="crate-column"><div className="section-head"><h2>01 / Pick a record</h2><small>6 cuts in the crate</small></div>
           <div className="filters" aria-label="Filter by genre">{genres.map(genre=><button key={genre} className={`filter ${filter===genre?'active':''}`} onClick={()=>setFilter(genre)}>{genre==='All'?'All sounds':genre}</button>)}</div>
-          <div className="crate-wrap"><div className="crate" aria-label="A crate of records. Tap a sleeve or drag a record to the turntable."><span className="crate-label">Fresh pulls / 001</span><div className="records">{visibleRecords.map((record,index)=><RecordSleeve key={record.id} record={record} index={index} selected={selected?.id===record.id} onSelect={()=>loadRecord(record)}/>)}</div><span className="crate-hint">tap a sleeve / drag the record to the deck</span></div></div>
+          <div className="crate-wrap"><div className="crate" aria-label="A crate of records. Tap a sleeve or drag a record to the turntable."><span className="crate-label">Fresh pulls / 001</span><div className="records">{visibleRecords.map((record,index)=><RecordSleeve key={record.id} record={record} index={index} artwork={artworkById[record.id]} selected={selected?.id===record.id} onSelect={()=>loadRecord(record)}/>)}</div><span className="crate-hint">tap a sleeve / drag the record to the deck</span></div></div>
           <div className="crate-caption"><span>Record store rules apply</span><span>Handle with care ☺</span></div>
         </div>
         <div className="right-col"><div className="section-head"><h2>02 / Give it a spin</h2><small>30 sec preview</small></div><Player state={{selected,track,playing,progress,elapsed,deckStatus,storeLink,trackTitle:track?.trackName||selected?.title||'The deck is yours.',artistName:track?.artistName||selected?.artist||'Pick a sleeve from the crate'}} actions={{stop,toggle}}/><p className="note" aria-live="polite">{note}</p></div>
