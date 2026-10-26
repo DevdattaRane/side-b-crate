@@ -1,20 +1,60 @@
-# Side B
+# SIDE B™
 
-**Find your next sound.** Side B is a brutalist-inspired, interactive record shop: browse a crate of 139 songs across 33 genres, pull a vinyl from its sleeve, and drop it on the turntable for a 30-second preview.
+```text
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ CRATE OPEN / 24-7                VOL. 001       ┃
+┃ 139 CUTS  //  33 GENRES  //  ONE VERY DEEP CRATE ┃
+┃ PULL A SLEEVE. DROP A RECORD. FIND YOUR SIDE B.  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
 
-**Live site:** [devdattarane.github.io/side-b-crate](https://devdattarane.github.io/side-b-crate/)
+<p align="center">
+  <strong>A brutalist little record shop for curious ears.</strong><br />
+  Flip through the sleeves. Find a new sound. Give it thirty seconds.
+</p>
 
-## Explore the crate
+<p align="center">
+  <a href="https://devdattarane.github.io/side-b-crate/"><strong>↗ OPEN THE CRATE</strong></a>
+  &nbsp; / &nbsp;
+  <a href="https://github.com/DevdattaRane/side-b-crate/actions/workflows/pages.yml"><img alt="GitHub Pages deployment" src="https://github.com/DevdattaRane/side-b-crate/actions/workflows/pages.yml/badge.svg" /></a>
+</p>
 
-- Filter the collection by genre or browse it six records at a time with the box controls.
-- Click a sleeve to pull its record out. The sleeve stays in the crate.
-- Drag the exposed record to the turntable to load and play its preview. Use the player controls to pause or restart it.
-- Turn on the ambient jazz toggle for a quiet, browser-generated chord loop.
-- The layout adapts to smaller screens and supports reduced-motion preferences.
+**Hard edges. Loud covers. No algorithm deciding what you should like.** Side B is a responsive, hands-on music explorer built around the familiar ritual of pulling a record and putting it on the deck.
 
-## Run locally
+---
 
-Requires Node.js 22 or later.
+## 01 / DIG IN
+
+| **139 tracks** | **33 genres** | **6 sleeves per box** | **30-second previews** |
+|:--:|:--:|:--:|:--:|
+| From deep cuts to classics | Jazz to drum & bass | Flip through the crate | Drop a disc on the deck |
+
+Filter by genre, then browse box by box. Pull a sleeve to reveal its vinyl. Drag the disc onto the turntable and the preview starts; the record slides back into its sleeve while it plays. Pause, restart, or eject it from the player.
+
+**On a phone?** Tap a sleeve to pull the record. Press and hold the exposed disc, then drag it to the player. Swipe the genre strip to explore more styles; the crate switches to a readable two-column layout.
+
+Flip on **play soft jazz** for a quiet chord loop generated in your browser. It starts only when you ask it to.
+
+> **THE RITUAL**  `FILTER → PULL → DROP → LISTEN`
+
+---
+
+## 02 / THE SOUND SYSTEM
+
+- **React 19** — sleeves, filters, crate boxes, and the player.
+- **Vite 8** — local development and production builds.
+- **dnd-kit** — drag the vinyl to the turntable, with touch input on mobile.
+- **Apple iTunes Search API** — album artwork, preview links, and store listings.
+- **Web Audio API** — the optional ambient-jazz loop.
+- **GitHub Pages + GitHub Actions** — build and publish on pushes to `main`.
+
+Artwork is looked up as each box is browsed; previews stream from Apple’s returned preview URL and are not stored in this repository. An internet connection is required, and a preview or cover may not be available for every track. Loaded records link to their Apple Music or iTunes listing. Apple’s [iTunes Search API terms](https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/iTuneSearchAPI/) apply to its artwork and preview audio.
+
+---
+
+## 03 / SPIN IT LOCALLY
+
+**You need Node.js 22 or newer.** Then drop into the repo:
 
 ```sh
 git clone https://github.com/DevdattaRane/side-b-crate.git
@@ -23,33 +63,36 @@ npm ci
 npm run dev
 ```
 
-Vite prints a local URL in the terminal. To make and preview a production build:
+Vite prints the local address. To build and preview the production version:
 
 ```sh
 npm run build
 npm run preview
 ```
 
-## Music and artwork
+---
 
-Side B looks up album artwork and 30-second song previews through the Apple iTunes Search API. Artwork loads as you browse each box; preview audio is streamed from the returned preview link and is not downloaded into the repository. The catalog requires an internet connection, and some tracks may not have a matching preview or artwork available.
+## 04 / CHANGE THE CRATE
 
-Apple’s [iTunes Search API terms](https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/iTuneSearchAPI/) apply to its preview audio and artwork. Each loaded track links to its Apple Music or iTunes listing.
+The collection lives in [`src/main.jsx`](src/main.jsx):
 
-## Customize the collection
+- Edit `crateCuts` to add or change tracks. Each row is `[title, artist, genre]`.
+- Add each new style to `genres` to give it a filter button.
+- Tune the sleeve palette in `sleeveColors`.
+- Change the six-sleeve box size with `recordsPerPage`.
+- Restyle the wood, type, motion, and turntable in [`src/style.css`](src/style.css).
 
-In `src/main.jsx`:
+Keep genre names in `genres` and `crateCuts` identical so the filters know where every record belongs.
 
-- Add, remove, or edit songs in `crateCuts`. Each row is `[title, artist, genre]`.
-- Add any new genre to the `genres` list so it appears as a filter.
-- Change the rotating sleeve colors in `sleeveColors`.
+---
 
-The crate shows six records per box. Adjust `recordsPerPage` to change that amount. Update the layout, animation, and player styling in `src/style.css`.
+## 05 / PUT IT ON THE INTERNET
 
-## Deploy
+Push to `main`. The workflow in `.github/workflows/pages.yml` installs dependencies, builds `dist/`, and deploys it to GitHub Pages. For a fresh fork, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**.
 
-GitHub Actions builds and deploys the site to GitHub Pages on every push to `main`. In the repository’s **Settings → Pages**, set the source to **GitHub Actions**. After the workflow succeeds, GitHub Pages serves the live site linked above.
+---
 
-## Built with
-
-React · Vite · dnd-kit · Web Audio API
+<p align="center">
+  <strong>SIDE B™</strong><br />
+  Built for the love of the deep cut. &nbsp; / &nbsp; Handle with care ☺
+</p>
