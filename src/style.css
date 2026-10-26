@@ -58,6 +58,7 @@
     .vinyl-disc{cursor:grab;touch-action:none;user-select:none}.vinyl-disc.disc-dragging{cursor:grabbing}.cover-art{cursor:pointer}
     .turntable.drop-ready .plinth{outline:3px dashed var(--ink);outline-offset:7px}
     .drop-callout{position:absolute;z-index:4;right:0;bottom:0;background:var(--pink);border:1.5px solid var(--ink);padding:5px 8px;font:9px var(--mono);text-transform:uppercase;transform:rotate(-4deg)}
+    .record.loaded .vinyl-disc,.record.loaded:hover .vinyl-disc,.record.loaded:focus-visible .vinyl-disc{transform:translateX(0)}
     @media(max-width:560px){
       .topbar{gap:12px}
       .top-right{gap:8px;min-width:0}
