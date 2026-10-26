@@ -1,6 +1,6 @@
 # Side B
 
-**Find your next sound.** Side B is a brutalist-inspired, interactive record shop: browse a crate of 39 songs across 13 genres, pull a vinyl from its sleeve, and drop it on the turntable for a 30-second preview.
+**Find your next sound.** Side B is a brutalist-inspired, interactive record shop: browse a crate of 139 songs across 33 genres, pull a vinyl from its sleeve, and drop it on the turntable for a 30-second preview.
 
 **Live site:** [devdattarane.github.io/side-b-crate](https://devdattarane.github.io/side-b-crate/)
 
