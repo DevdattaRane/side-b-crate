@@ -2,7 +2,7 @@
 
 ```text
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ CRATE OPEN / 24-7                VOL. 001       ┃
+┃ CRATE OPEN / 24-7                VOL. 001        ┃
 ┃ 139 CUTS  //  33 GENRES  //  ONE VERY DEEP CRATE ┃
 ┃ PULL A SLEEVE. DROP A RECORD. FIND YOUR SIDE B.  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
