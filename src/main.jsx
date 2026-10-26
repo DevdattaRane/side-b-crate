@@ -57,6 +57,7 @@ function App() {
   const jazzTimerRef = useRef(null);
   const [filter,setFilter] = useState('All');
   const [page,setPage] = useState(0);
+  const [pageDirection,setPageDirection] = useState('next');
   const [selected,setSelected] = useState(null);
   const [sleeveSelection,setSleeveSelection] = useState(null);
   const [artworkById,setArtworkById] = useState({});
@@ -82,6 +83,11 @@ function App() {
     const next=sleeveSelection?.id===record.id?null:record;
     setSleeveSelection(next);
     setNote(next?`Pulled ${record.title} from its sleeve. Drag the record to the turntable to load it.`:'Record tucked back into its sleeve.');
+  };
+
+  const moveCrate = (direction) => {
+    setPageDirection(direction);
+    setPage(current=>Math.max(0,Math.min(pageCount-1,current+(direction==='next'?1:-1))));
   };
 
   const toggleJazz = async () => {
@@ -251,8 +257,8 @@ function App() {
       <section className="studio" id="dig" aria-label="Record crate and turntable">
         <div className="crate-column"><div className="section-head"><h2>01 / Pick a record</h2><small>{filteredRecords.length} cuts · {genres.length-1} genres</small></div>
           <div className="filters" aria-label="Filter by genre">{genres.map(genre=><button key={genre} className={`filter ${filter===genre?'active':''}`} onClick={()=>{setFilter(genre);setPage(0);}}>{genre==='All'?'All sounds':genre}</button>)}</div>
-          <div className="crate-wrap"><div className="crate" aria-label="A crate of records. Click a sleeve to pull out its record, then drag it to the turntable."><span className="crate-label">Fresh pulls / 001</span><div className="records">{visibleRecords.map((record,index)=><RecordSleeve key={record.id} record={record} index={index} artwork={artworkById[record.id]} selected={sleeveSelection?.id===record.id} onSelect={()=>pullSleeve(record)}/>)}</div><span className="crate-hint">click a sleeve to pull / drag its record to the deck</span></div></div>
-          {pageCount>1&&<div className="crate-pager" aria-label="Browse records"><button type="button" onClick={()=>setPage(value=>Math.max(0,value-1))} disabled={page===0}>← previous</button><span aria-live="polite">{rangeStart}–{rangeEnd} / {filteredRecords.length}</span><button type="button" onClick={()=>setPage(value=>Math.min(pageCount-1,value+1))} disabled={page>=pageCount-1}>next →</button></div>}
+          <div className="crate-wrap"><div className="crate" aria-label="A crate of records. Click a sleeve to pull out its record, then drag it to the turntable."><span className="crate-label">Pull box / {String(page+1).padStart(2,'0')}</span><div key={page} className={`records ${pageDirection==='next'?'box-slide-next':'box-slide-previous'}`}>{visibleRecords.map((record,index)=><RecordSleeve key={record.id} record={record} index={index} artwork={artworkById[record.id]} selected={sleeveSelection?.id===record.id} onSelect={()=>pullSleeve(record)}/>)}</div><span className="crate-hint">click a sleeve to pull / drag its record to the deck</span></div></div>
+          {pageCount>1&&<div className="crate-pager" aria-label="Browse crate boxes"><button type="button" onClick={()=>moveCrate('previous')} disabled={page===0}>← previous box</button><span aria-live="polite">BOX {String(page+1).padStart(2,'0')} / {String(pageCount).padStart(2,'0')}<small>{rangeStart}–{rangeEnd} of {filteredRecords.length}</small></span><button type="button" onClick={()=>moveCrate('next')} disabled={page>=pageCount-1}>next box →</button></div>}
           <div className="crate-caption"><span>Record store rules apply</span><span>Handle with care ☺</span></div>
         </div>
         <div className="right-col"><div className="section-head"><h2>02 / Give it a spin</h2><small>30 sec preview</small></div><Player state={{selected,track,playing,progress,elapsed,deckStatus,storeLink,trackTitle:track?.trackName||selected?.title||'The deck is yours.',artistName:track?.artistName||selected?.artist||'Pick a sleeve from the crate'}} actions={{stop,toggle}}/><p className="note" aria-live="polite">{note}</p></div>
