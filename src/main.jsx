@@ -162,6 +162,7 @@ function App() {
 
   const loadRecord = async (record,{autoplay=true}={}) => {
     const request = ++requestRef.current;
+    setSleeveSelection(null);
     setSelected(record); setTrack(null); setPlaying(false); setProgress(0); setElapsed('0:00');
     setDeckStatus('finding the groove…');
     setNote(`Loading ${record.title} by ${record.artist} from the music catalog…`);
