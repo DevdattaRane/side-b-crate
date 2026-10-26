@@ -26,7 +26,7 @@ function DraggableDisc({record}) {
 function RecordSleeve({record,index,selected,onSelect,artwork}) {
   return <div className={`record ${selected?'selected':''}`} style={{'--cover':record.color,zIndex:index+1}}>
     <DraggableDisc record={record}/>
-    <button type="button" className={`cover-art ${artwork?'has-art':''}`} style={artwork?{backgroundImage:`url("${artwork}")`,backgroundSize:'cover',backgroundPosition:'center'}:undefined} aria-label={`Load ${record.title} by ${record.artist}, ${record.genre} onto the turntable`} onClick={onSelect}>
+    <button type="button" className={`cover-art ${artwork?'has-art':''}`} style={artwork?{backgroundImage:`url("${artwork}")`,backgroundSize:'cover',backgroundPosition:'center'}:undefined} aria-label={`Pull ${record.title} by ${record.artist}, ${record.genre} out of its sleeve`} onClick={onSelect}>
       {!artwork&&<span className="cover-glyph">{record.glyph}</span>}
       <span className="cover-footer"><strong>{record.title}</strong><small>{record.genre} / {record.artist}</small></span>
     </button>
@@ -54,10 +54,11 @@ function App() {
   const jazzTimerRef = useRef(null);
   const [filter,setFilter] = useState('All');
   const [selected,setSelected] = useState(null);
+  const [sleeveSelection,setSleeveSelection] = useState(null);
   const [artworkById,setArtworkById] = useState({});
   const [track,setTrack] = useState(null);
   const [deckStatus,setDeckStatus] = useState('waiting for a record');
-  const [note,setNote] = useState('Click a sleeve to load its preview, then press play on the turntable. Or drag its record to the deck to start listening.');
+  const [note,setNote] = useState('Click a sleeve to pull out its record. Drag the record to the turntable to load a preview.');
   const [playing,setPlaying] = useState(false);
   const [progress,setProgress] = useState(0);
   const [elapsed,setElapsed] = useState('0:00');
@@ -70,6 +71,12 @@ function App() {
     setToast(message);
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(()=>setToast(''),2600);
+  };
+
+  const pullSleeve = (record) => {
+    const next=sleeveSelection?.id===record.id?null:record;
+    setSleeveSelection(next);
+    setNote(next?`Pulled ${record.title} from its sleeve. Drag the record to the turntable to load it.`:'Record tucked back into its sleeve.');
   };
 
   const toggleJazz = async () => {
@@ -157,8 +164,9 @@ function App() {
     const audio = audioRef.current;
     audio.pause(); audio.currentTime=0; audio.removeAttribute('src'); audio.load();
     setSelected(null); setTrack(null); setPlaying(false); setProgress(0); setElapsed('0:00');
+    setSleeveSelection(null);
     setDeckStatus('waiting for a record');
-    setNote('Click a sleeve to load its preview, then press play on the turntable. Or drag its record to the deck to start listening.');
+    setNote('Click a sleeve to pull out its record. Drag the record to the turntable to load a preview.');
     setStoreLink('https://www.apple.com/apple-music/');
     showToast('Record returned to the crate');
   };
@@ -209,7 +217,7 @@ function App() {
 
   const onDragStart = ({operation}) => {
     const record=records.find(item=>item.id===operation.source.id);
-    if (record) setNote(`Record lifted: ${record.title}. Drop it on the turntable to load its preview.`);
+    if (record) {setSleeveSelection(record);setNote(`Record lifted: ${record.title}. Drop it on the turntable to load its preview.`);}
   };
   const onDragEnd = ({operation}) => {
     const record=records.find(item=>item.id===operation.source.id);
@@ -230,7 +238,7 @@ function App() {
       <section className="studio" id="dig" aria-label="Record crate and turntable">
         <div className="crate-column"><div className="section-head"><h2>01 / Pick a record</h2><small>6 cuts in the crate</small></div>
           <div className="filters" aria-label="Filter by genre">{genres.map(genre=><button key={genre} className={`filter ${filter===genre?'active':''}`} onClick={()=>setFilter(genre)}>{genre==='All'?'All sounds':genre}</button>)}</div>
-          <div className="crate-wrap"><div className="crate" aria-label="A crate of records. Click a sleeve to load it, or drag the record to the turntable to play its preview."><span className="crate-label">Fresh pulls / 001</span><div className="records">{visibleRecords.map((record,index)=><RecordSleeve key={record.id} record={record} index={index} artwork={artworkById[record.id]} selected={selected?.id===record.id} onSelect={()=>loadRecord(record,{autoplay:false})}/>)}</div><span className="crate-hint">click a sleeve to load / drag the record to the deck</span></div></div>
+          <div className="crate-wrap"><div className="crate" aria-label="A crate of records. Click a sleeve to pull out its record, then drag it to the turntable."><span className="crate-label">Fresh pulls / 001</span><div className="records">{visibleRecords.map((record,index)=><RecordSleeve key={record.id} record={record} index={index} artwork={artworkById[record.id]} selected={sleeveSelection?.id===record.id} onSelect={()=>pullSleeve(record)}/>)}</div><span className="crate-hint">click a sleeve to pull / drag its record to the deck</span></div></div>
           <div className="crate-caption"><span>Record store rules apply</span><span>Handle with care ☺</span></div>
         </div>
         <div className="right-col"><div className="section-head"><h2>02 / Give it a spin</h2><small>30 sec preview</small></div><Player state={{selected,track,playing,progress,elapsed,deckStatus,storeLink,trackTitle:track?.trackName||selected?.title||'The deck is yours.',artistName:track?.artistName||selected?.artist||'Pick a sleeve from the crate'}} actions={{stop,toggle}}/><p className="note" aria-live="polite">{note}</p></div>
