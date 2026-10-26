@@ -4,15 +4,18 @@ import {DragDropProvider, useDraggable, useDroppable} from '@dnd-kit/react';
 import {Feedback, PointerActivationConstraints, PointerSensor} from '@dnd-kit/dom';
 import './style.css';
 
-const records = [
-  {id:'feeling-good',genre:'Jazz',title:'Feeling Good',artist:'Nina Simone',glyph:<>FEEL<br/>GOOD</>,color:'#ff5bcb'},
-  {id:'money-trees',genre:'Hip-Hop',title:'Money Trees',artist:'Kendrick Lamar',glyph:<>MONEY<br/>TREES</>,color:'#8db7ff'},
-  {id:'505',genre:'Indie',title:'505',artist:'Arctic Monkeys',glyph:'505',color:'#f3d44d'},
-  {id:'one-more-time',genre:'Electronic',title:'One More Time',artist:'Daft Punk',glyph:<>ONE<br/>MORE</>,color:'#c8a1ff'},
-  {id:'superstition',genre:'Funk',title:'Superstition',artist:'Stevie Wonder',glyph:<>SUPER<br/>STITION</>,color:'#ff865c'},
-  {id:'less-i-know',genre:'Soul',title:'The Less I Know the Better',artist:'Tame Impala',glyph:<>LESS I<br/>KNOW</>,color:'#c9edb4'},
+const crateCuts = [
+  ['Feeling Good','Nina Simone','Jazz'],['Money Trees','Kendrick Lamar','Hip-Hop'],['505','Arctic Monkeys','Indie'],['One More Time','Daft Punk','Electronic'],['Superstition','Stevie Wonder','Funk'],['The Less I Know the Better','Tame Impala','Soul'],['Dream On','Aerosmith','Rock'],['Blinding Lights','The Weeknd','Pop'],['No Scrubs','TLC','R&B'],['Three Little Birds','Bob Marley & The Wailers','Reggae'],['Oye Como Va','Santana','Latin'],['Clair de Lune','Claude Debussy','Classical'],['An Ending (Ascent)','Brian Eno','Ambient'],
+  ['Take Five','The Dave Brubeck Quartet','Jazz'],['Juicy','The Notorious B.I.G.','Hip-Hop'],['Do I Wanna Know?','Arctic Monkeys','Indie'],['Midnight City','M83','Electronic'],['Get Up (I Feel Like Being a) Sex Machine','James Brown','Funk'],['Ain’t No Mountain High Enough','Marvin Gaye & Tammi Terrell','Soul'],['Bohemian Rhapsody','Queen','Rock'],['Toxic','Britney Spears','Pop'],['Crazy','Gnarls Barkley','R&B'],['Is This Love','Bob Marley & The Wailers','Reggae'],['Bailando','Enrique Iglesias','Latin'],['Moonlight Sonata','Ludwig van Beethoven','Classical'],['Weightless','Marconi Union','Ambient'],
+  ['So What','Miles Davis','Jazz'],['Ms. Jackson','Outkast','Hip-Hop'],['Dreams','The Cranberries','Indie'],['Windowlicker','Aphex Twin','Electronic'],['Give Up the Funk','Parliament','Funk'],['Back to Black','Amy Winehouse','Soul'],['Everlong','Foo Fighters','Rock'],['Levitating','Dua Lipa','Pop'],['Redbone','Childish Gambino','R&B'],['Could You Be Loved','Bob Marley & The Wailers','Reggae'],['Despacito','Luis Fonsi','Latin'],['The Four Seasons: Spring','Antonio Vivaldi','Classical'],['Open Eye Signal','Jon Hopkins','Ambient'],
 ];
-const genres = ['All','Jazz','Hip-Hop','Indie','Electronic','Funk','Soul'];
+const sleeveColors = ['#ff5bcb','#8db7ff','#f3d44d','#c8a1ff','#ff865c','#c9edb4'];
+const records = crateCuts.map(([title,artist,genre],index)=>({
+  id:title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''),
+  title,artist,genre,glyph:title.toUpperCase(),color:sleeveColors[index%sleeveColors.length],
+}));
+const genres = ['All','Jazz','Hip-Hop','Indie','Electronic','Funk','Soul','Rock','Pop','R&B','Reggae','Latin','Classical','Ambient'];
+const recordsPerPage = 6;
 
 function DraggableDisc({record}) {
   const {ref,isDragging} = useDraggable({
@@ -53,9 +56,11 @@ function App() {
   const jazzContextRef = useRef(null);
   const jazzTimerRef = useRef(null);
   const [filter,setFilter] = useState('All');
+  const [page,setPage] = useState(0);
   const [selected,setSelected] = useState(null);
   const [sleeveSelection,setSleeveSelection] = useState(null);
   const [artworkById,setArtworkById] = useState({});
+  const artworkRequestedRef = useRef(new Set());
   const [track,setTrack] = useState(null);
   const [deckStatus,setDeckStatus] = useState('waiting for a record');
   const [note,setNote] = useState('Click a sleeve to pull out its record. Drag the record to the turntable to load a preview.');
@@ -195,7 +200,10 @@ function App() {
 
   useEffect(()=>{
     let cancelled=false;
-    Promise.all(records.map(async record=>{
+    const pageCuts=records.filter(record=>filter==='All'||record.genre===filter).slice(page*recordsPerPage,(page+1)*recordsPerPage);
+    const pending=pageCuts.filter(record=>!artworkById[record.id]&&!artworkRequestedRef.current.has(record.id));
+    pending.forEach(record=>artworkRequestedRef.current.add(record.id));
+    Promise.all(pending.map(async record=>{
       try {
         const term=encodeURIComponent(`${record.title} ${record.artist}`);
         const response=await fetch(`https://itunes.apple.com/search?term=${term}&entity=song&limit=10&country=IN`);
@@ -205,10 +213,11 @@ function App() {
         return match?.artworkUrl100?[record.id,match.artworkUrl100.replace('100x100bb','300x300bb')]:null;
       } catch {return null;}
     })).then(entries=>{
-      if (!cancelled) setArtworkById(Object.fromEntries(entries.filter(Boolean)));
+      const found=entries.filter(Boolean);
+      if (!cancelled&&found.length) setArtworkById(current=>({...current,...Object.fromEntries(found)}));
     });
     return ()=>{cancelled=true;};
-  },[]);
+  },[filter,page,artworkById]);
 
   useEffect(()=>()=>{
     clearInterval(jazzTimerRef.current);
@@ -223,7 +232,11 @@ function App() {
     const record=records.find(item=>item.id===operation.source.id);
     if (operation.target?.id==='turntable' && record) loadRecord(record);
   };
-  const visibleRecords=records.filter(record=>filter==='All'||record.genre===filter);
+  const filteredRecords=records.filter(record=>filter==='All'||record.genre===filter);
+  const pageCount=Math.max(1,Math.ceil(filteredRecords.length/recordsPerPage));
+  const visibleRecords=filteredRecords.slice(page*recordsPerPage,(page+1)*recordsPerPage);
+  const rangeStart=filteredRecords.length?page*recordsPerPage+1:0;
+  const rangeEnd=Math.min((page+1)*recordsPerPage,filteredRecords.length);
 
   return <DragDropProvider sensors={defaults=>[
     ...defaults.filter(sensor=>sensor!==PointerSensor),
@@ -236,9 +249,10 @@ function App() {
       <section className="hero" aria-labelledby="title"><div className="hero-kicker">a little less scrolling, a little more listening</div><h1 id="title">Find your<br/><span className="outline">side B.</span></h1><div className="hero-bottom"><p>Good music is hiding everywhere. <strong>Dig through the crate</strong>, pull a record, and give something new a spin.</p><span className="scribble">NO SKIP BUTTON<br/>FOR GOOD TASTE ↗</span></div></section>
       <div className="ticker" aria-hidden="true"><div className="ticker-track"><span>Dig deep <b>✳</b> Follow the groove <b>✳</b> Find your side B <b>✳</b> One more spin <b>✳</b> Dig deep <b>✳</b> Follow the groove <b>✳</b> Find your side B <b>✳</b> One more spin <b>✳</b></span><span>Dig deep <b>✳</b> Follow the groove <b>✳</b> Find your side B <b>✳</b> One more spin <b>✳</b> Dig deep <b>✳</b> Follow the groove <b>✳</b> Find your side B <b>✳</b> One more spin <b>✳</b></span></div></div>
       <section className="studio" id="dig" aria-label="Record crate and turntable">
-        <div className="crate-column"><div className="section-head"><h2>01 / Pick a record</h2><small>6 cuts in the crate</small></div>
-          <div className="filters" aria-label="Filter by genre">{genres.map(genre=><button key={genre} className={`filter ${filter===genre?'active':''}`} onClick={()=>setFilter(genre)}>{genre==='All'?'All sounds':genre}</button>)}</div>
+        <div className="crate-column"><div className="section-head"><h2>01 / Pick a record</h2><small>{filteredRecords.length} cuts · {genres.length-1} genres</small></div>
+          <div className="filters" aria-label="Filter by genre">{genres.map(genre=><button key={genre} className={`filter ${filter===genre?'active':''}`} onClick={()=>{setFilter(genre);setPage(0);}}>{genre==='All'?'All sounds':genre}</button>)}</div>
           <div className="crate-wrap"><div className="crate" aria-label="A crate of records. Click a sleeve to pull out its record, then drag it to the turntable."><span className="crate-label">Fresh pulls / 001</span><div className="records">{visibleRecords.map((record,index)=><RecordSleeve key={record.id} record={record} index={index} artwork={artworkById[record.id]} selected={sleeveSelection?.id===record.id} onSelect={()=>pullSleeve(record)}/>)}</div><span className="crate-hint">click a sleeve to pull / drag its record to the deck</span></div></div>
+          {pageCount>1&&<div className="crate-pager" aria-label="Browse records"><button type="button" onClick={()=>setPage(value=>Math.max(0,value-1))} disabled={page===0}>← previous</button><span aria-live="polite">{rangeStart}–{rangeEnd} / {filteredRecords.length}</span><button type="button" onClick={()=>setPage(value=>Math.min(pageCount-1,value+1))} disabled={page>=pageCount-1}>next →</button></div>}
           <div className="crate-caption"><span>Record store rules apply</span><span>Handle with care ☺</span></div>
         </div>
         <div className="right-col"><div className="section-head"><h2>02 / Give it a spin</h2><small>30 sec preview</small></div><Player state={{selected,track,playing,progress,elapsed,deckStatus,storeLink,trackTitle:track?.trackName||selected?.title||'The deck is yours.',artistName:track?.artistName||selected?.artist||'Pick a sleeve from the crate'}} actions={{stop,toggle}}/><p className="note" aria-live="polite">{note}</p></div>
