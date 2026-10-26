@@ -46,8 +46,8 @@ function DraggableDisc({record}) {
   return <span ref={ref} className={`vinyl-disc ${isDragging?'disc-dragging':''}`} style={{'--cover':record.color}} role="button" tabIndex={0} aria-label={`Drag ${record.title} to the turntable`} />;
 }
 
-function RecordSleeve({record,index,selected,onSelect,artwork}) {
-  return <div className={`record ${selected?'selected':''}`} style={{'--cover':record.color,zIndex:index+1}}>
+function RecordSleeve({record,index,selected,loaded,onSelect,artwork}) {
+  return <div className={`record ${selected?'selected':''} ${loaded?'loaded':''}`} style={{'--cover':record.color,zIndex:index+1}}>
     <DraggableDisc record={record}/>
     <button type="button" className={`cover-art ${artwork?'has-art':''}`} style={artwork?{backgroundImage:`url("${artwork}")`,backgroundSize:'cover',backgroundPosition:'center'}:undefined} aria-label={`Pull ${record.title} by ${record.artist}, ${record.genre} out of its sleeve`} onClick={onSelect}>
       {!artwork&&<span className="cover-glyph">{record.glyph}</span>}
@@ -278,7 +278,7 @@ function App() {
       <section className="studio" id="dig" aria-label="Record crate and turntable">
         <div className="crate-column"><div className="section-head"><h2>01 / Pick a record</h2><small>{filteredRecords.length} cuts · {genres.length-1} genres</small></div>
           <div className="filters" aria-label="Filter by genre">{genres.map(genre=><button key={genre} className={`filter ${filter===genre?'active':''}`} onClick={()=>{setFilter(genre);setPage(0);}}>{genre==='All'?'All sounds':genre}</button>)}</div>
-          <div className="crate-wrap"><div className="crate" aria-label="A crate of records. Click a sleeve to pull out its record, then drag it to the turntable."><span className="crate-label">Pull box / {String(page+1).padStart(2,'0')}</span><div key={page} className={`records ${pageDirection==='next'?'box-slide-next':'box-slide-previous'}`}>{visibleRecords.map((record,index)=><RecordSleeve key={record.id} record={record} index={index} artwork={artworkById[record.id]} selected={sleeveSelection?.id===record.id} onSelect={()=>pullSleeve(record)}/>)}</div><span className="crate-hint">click a sleeve to pull / drag its record to the deck</span></div></div>
+          <div className="crate-wrap"><div className="crate" aria-label="A crate of records. Click a sleeve to pull out its record, then drag it to the turntable."><span className="crate-label">Pull box / {String(page+1).padStart(2,'0')}</span><div key={page} className={`records ${pageDirection==='next'?'box-slide-next':'box-slide-previous'}`}>{visibleRecords.map((record,index)=><RecordSleeve key={record.id} record={record} index={index} artwork={artworkById[record.id]} selected={sleeveSelection?.id===record.id} loaded={selected?.id===record.id} onSelect={()=>pullSleeve(record)}/>)}</div><span className="crate-hint">click a sleeve to pull / drag its record to the deck</span></div></div>
           {pageCount>1&&<div className="crate-pager" aria-label="Browse crate boxes"><button type="button" onClick={()=>moveCrate('previous')} disabled={page===0}>← previous box</button><span aria-live="polite">BOX {String(page+1).padStart(2,'0')} / {String(pageCount).padStart(2,'0')}<small>{rangeStart}–{rangeEnd} of {filteredRecords.length}</small></span><button type="button" onClick={()=>moveCrate('next')} disabled={page>=pageCount-1}>next box →</button></div>}
           <div className="crate-caption"><span>Record store rules apply</span><span>Handle with care ☺</span></div>
         </div>
