@@ -1,17 +1,55 @@
-# SIDE B — Find your next sound
+# Side B
 
-A responsive, brutalist-inspired record crate for exploring genres. The square sleeves fan out in the crate; drag a vinyl disc (the sleeve stays in place) onto the turntable to load and play a 30-second preview. Tapping a sleeve is also supported.
+**Find your next sound.** Side B is a brutalist-inspired, interactive record shop: browse a crate of 39 songs across 13 genres, pull a vinyl from its sleeve, and drop it on the turntable for a 30-second preview.
 
-## Run it
+**Live site:** [devdattarane.github.io/side-b-crate](https://devdattarane.github.io/side-b-crate/)
 
-Install dependencies with `npm ci`, then run `npm run dev` for local development or `npm run build` to create the production site in `dist/`. Original album covers and song previews load from the Apple iTunes Search API, so they need an internet connection. The ambient jazz toggle generates a quiet chord loop in the browser and starts only after a click; this avoids unexpected autoplay.
+## Explore the crate
 
-Previews are streamed, not downloaded. Each loaded track links to its Apple Music/iTunes listing and the player credits iTunes. Apple's [Search API terms](https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/iTuneSearchAPI/) govern use of preview audio and artwork.
+- Filter the collection by genre or browse it six records at a time with the box controls.
+- Click a sleeve to pull its record out. The sleeve stays in the crate.
+- Drag the exposed record to the turntable to load and play its preview. Use the player controls to pause or restart it.
+- Turn on the ambient jazz toggle for a quiet, browser-generated chord loop.
+- The layout adapts to smaller screens and supports reduced-motion preferences.
 
-## Deploy on GitHub Pages
+## Run locally
 
-The included workflow builds the Vite app and deploys it whenever changes reach `main`. In the repository, open **Settings → Pages** and set **Build and deployment → Source** to **GitHub Actions**. The first workflow run will publish the site at the Pages URL shown in the workflow summary.
+Requires Node.js 22 or later.
 
-## Customize the crate
+```sh
+git clone https://github.com/DevdattaRane/side-b-crate.git
+cd side-b-crate
+npm ci
+npm run dev
+```
 
-Edit the `records` array in `src/main.jsx` to change the genre, track, artist, sleeve text, and sleeve color. The page looks up a matching 30-second preview when a record is selected or dropped on the player.
+Vite prints a local URL in the terminal. To make and preview a production build:
+
+```sh
+npm run build
+npm run preview
+```
+
+## Music and artwork
+
+Side B looks up album artwork and 30-second song previews through the Apple iTunes Search API. Artwork loads as you browse each box; preview audio is streamed from the returned preview link and is not downloaded into the repository. The catalog requires an internet connection, and some tracks may not have a matching preview or artwork available.
+
+Apple’s [iTunes Search API terms](https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/iTuneSearchAPI/) apply to its preview audio and artwork. Each loaded track links to its Apple Music or iTunes listing.
+
+## Customize the collection
+
+In `src/main.jsx`:
+
+- Add, remove, or edit songs in `crateCuts`. Each row is `[title, artist, genre]`.
+- Add any new genre to the `genres` list so it appears as a filter.
+- Change the rotating sleeve colors in `sleeveColors`.
+
+The crate shows six records per box. Adjust `recordsPerPage` to change that amount. Update the layout, animation, and player styling in `src/style.css`.
+
+## Deploy
+
+GitHub Actions builds and deploys the site to GitHub Pages on every push to `main`. In the repository’s **Settings → Pages**, set the source to **GitHub Actions**. After the workflow succeeds, GitHub Pages serves the live site linked above.
+
+## Built with
+
+React · Vite · dnd-kit · Web Audio API
