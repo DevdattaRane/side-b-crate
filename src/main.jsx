@@ -8,13 +8,33 @@ const crateCuts = [
   ['Feeling Good','Nina Simone','Jazz'],['Money Trees','Kendrick Lamar','Hip-Hop'],['505','Arctic Monkeys','Indie'],['One More Time','Daft Punk','Electronic'],['Superstition','Stevie Wonder','Funk'],['The Less I Know the Better','Tame Impala','Soul'],['Dream On','Aerosmith','Rock'],['Blinding Lights','The Weeknd','Pop'],['No Scrubs','TLC','R&B'],['Three Little Birds','Bob Marley & The Wailers','Reggae'],['Oye Como Va','Santana','Latin'],['Clair de Lune','Claude Debussy','Classical'],['An Ending (Ascent)','Brian Eno','Ambient'],
   ['Take Five','The Dave Brubeck Quartet','Jazz'],['Juicy','The Notorious B.I.G.','Hip-Hop'],['Do I Wanna Know?','Arctic Monkeys','Indie'],['Midnight City','M83','Electronic'],['Get Up (I Feel Like Being a) Sex Machine','James Brown','Funk'],['Ain’t No Mountain High Enough','Marvin Gaye & Tammi Terrell','Soul'],['Bohemian Rhapsody','Queen','Rock'],['Toxic','Britney Spears','Pop'],['Crazy','Gnarls Barkley','R&B'],['Is This Love','Bob Marley & The Wailers','Reggae'],['Bailando','Enrique Iglesias','Latin'],['Moonlight Sonata','Ludwig van Beethoven','Classical'],['Weightless','Marconi Union','Ambient'],
   ['So What','Miles Davis','Jazz'],['Ms. Jackson','Outkast','Hip-Hop'],['Dreams','The Cranberries','Indie'],['Windowlicker','Aphex Twin','Electronic'],['Give Up the Funk','Parliament','Funk'],['Back to Black','Amy Winehouse','Soul'],['Everlong','Foo Fighters','Rock'],['Levitating','Dua Lipa','Pop'],['Redbone','Childish Gambino','R&B'],['Could You Be Loved','Bob Marley & The Wailers','Reggae'],['Despacito','Luis Fonsi','Latin'],['The Four Seasons: Spring','Antonio Vivaldi','Classical'],['Open Eye Signal','Jon Hopkins','Ambient'],
+  ['The Thrill Is Gone','B.B. King','Blues'],['I’d Rather Go Blind','Etta James','Blues'],['Pride and Joy','Stevie Ray Vaughan','Blues'],['Cross Road Blues','Robert Johnson','Blues'],['Boom Boom','John Lee Hooker','Blues'],
+  ['Jolene','Dolly Parton','Country'],['Ring of Fire','Johnny Cash','Country'],['Take Me Home, Country Roads','John Denver','Country'],['Before He Cheats','Carrie Underwood','Country'],['Tennessee Whiskey','Chris Stapleton','Country'],
+  ['Stayin’ Alive','Bee Gees','Disco'],['Le Freak','CHIC','Disco'],['I Will Survive','Gloria Gaynor','Disco'],['September','Earth, Wind & Fire','Disco'],['Don’t Leave Me This Way','Thelma Houston','Disco'],
+  ['Show Me Love','Robin S','House'],['Finally','CeCe Peniston','House'],['Your Love','Frankie Knuckles','House'],['Music Sounds Better with You','Stardust','House'],['Lady (Hear Me Tonight)','Modjo','House'],
+  ['Strings of Life','Derrick May','Techno'],['The Bells','Jeff Mills','Techno'],['Spastik','Plastikman','Techno'],['Born Slippy (Nuxx)','Underworld','Techno'],['Energy Flash','Joey Beltram','Techno'],
+  ['Enter Sandman','Metallica','Metal'],['Paranoid','Black Sabbath','Metal'],['Chop Suey!','System Of A Down','Metal'],['The Trooper','Iron Maiden','Metal'],['Master of Puppets','Metallica','Metal'],
+  ['Blitzkrieg Bop','Ramones','Punk'],['London Calling','The Clash','Punk'],['Basket Case','Green Day','Punk'],['Anarchy in the U.K.','Sex Pistols','Punk'],['Holiday','Green Day','Punk'],
+  ['Creep','Radiohead','Alternative'],['Seven Nation Army','The White Stripes','Alternative'],['Maps','Yeah Yeah Yeahs','Alternative'],['Float On','Modest Mouse','Alternative'],['Take Me Out','Franz Ferdinand','Alternative'],
+  ['Dynamite','BTS','K-Pop'],['How You Like That','BLACKPINK','K-Pop'],['Super Shy','NewJeans','K-Pop'],['Gangnam Style','PSY','K-Pop'],['The Feels','TWICE','K-Pop'],
+  ['Essence','Wizkid feat. Tems','Afrobeats'],['Ye','Burna Boy','Afrobeats'],['Calm Down','Rema','Afrobeats'],['Last Last','Burna Boy','Afrobeats'],['Fall','Davido','Afrobeats'],
+  ['Gasolina','Daddy Yankee','Reggaeton'],['Tití Me Preguntó','Bad Bunny','Reggaeton'],['DÁKITI','Bad Bunny & Jhay Cortez','Reggaeton'],['Con Altura','ROSALÍA & J Balvin','Reggaeton'],['Pepas','Farruko','Reggaeton'],
+  ['Fast Car','Tracy Chapman','Folk'],['Big Yellow Taxi','Joni Mitchell','Folk'],['The Times They Are a-Changin’','Bob Dylan','Folk'],['Homeward Bound','Simon & Garfunkel','Folk'],['If I Had a Boat','Lyle Lovett','Folk'],
+  ['When the Sun Hits','Slowdive','Shoegaze'],['Only Shallow','My Bloody Valentine','Shoegaze'],['Alison','Slowdive','Shoegaze'],['Sometimes','My Bloody Valentine','Shoegaze'],['Vapour Trail','Ride','Shoegaze'],
+  ['Inner City Life','Goldie','Drum & Bass'],['Brown Paper Bag','Roni Size','Drum & Bass'],['Original Nuttah','UK Apache & Shy FX','Drum & Bass'],['Circles','Adam F','Drum & Bass'],['The Nine','Bad Company UK','Drum & Bass'],
+  ['Oh Happy Day','The Edwin Hawkins Singers','Gospel'],['Take My Hand, Precious Lord','Mahalia Jackson','Gospel'],['Amazing Grace','Aretha Franklin','Gospel'],['Soon and Very Soon','Andraé Crouch','Gospel'],['Shackles (Praise You)','Mary Mary','Gospel'],
+  ['Glory Box','Portishead','Trip-Hop'],['Teardrop','Massive Attack','Trip-Hop'],['Inertia Creeps','Massive Attack','Trip-Hop'],['Rabbit in Your Headlights','UNKLE feat. Thom Yorke','Trip-Hop'],['Hell Is Round the Corner','Tricky','Trip-Hop'],
+  ['Smells Like Teen Spirit','Nirvana','Grunge'],['Black','Pearl Jam','Grunge'],['Man in the Box','Alice In Chains','Grunge'],['Plush','Stone Temple Pilots','Grunge'],['Come as You Are','Nirvana','Grunge'],
+  ['Hedwig’s Theme','John Williams','Soundtrack'],['My Heart Will Go On','Céline Dion','Soundtrack'],['Lose Yourself','Eminem','Soundtrack'],['Shallow','Lady Gaga & Bradley Cooper','Soundtrack'],['Time','Hans Zimmer','Soundtrack'],
+  ['Pata Pata','Miriam Makeba','World'],['Mas Que Nada','Sérgio Mendes','World'],['Jerusalema','Master KG feat. Nomcebo Zikode','World'],['Bamboléo','Gipsy Kings','World'],['Chan Chan','Buena Vista Social Club','World'],
+  ['Landslide','Fleetwood Mac','Singer-Songwriter'],['Both Sides, Now','Joni Mitchell','Singer-Songwriter'],['Vincent','Don McLean','Singer-Songwriter'],['Hallelujah','Jeff Buckley','Singer-Songwriter'],['The A Team','Ed Sheeran','Singer-Songwriter'],
 ];
 const sleeveColors = ['#ff5bcb','#8db7ff','#f3d44d','#c8a1ff','#ff865c','#c9edb4'];
 const records = crateCuts.map(([title,artist,genre],index)=>({
   id:title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''),
   title,artist,genre,glyph:title.toUpperCase(),color:sleeveColors[index%sleeveColors.length],
 }));
-const genres = ['All','Jazz','Hip-Hop','Indie','Electronic','Funk','Soul','Rock','Pop','R&B','Reggae','Latin','Classical','Ambient'];
+const genres = ['All','Jazz','Hip-Hop','Indie','Electronic','Funk','Soul','Rock','Pop','R&B','Reggae','Latin','Classical','Ambient','Blues','Country','Disco','House','Techno','Metal','Punk','Alternative','K-Pop','Afrobeats','Reggaeton','Folk','Shoegaze','Drum & Bass','Gospel','Trip-Hop','Grunge','Soundtrack','World','Singer-Songwriter'];
 const recordsPerPage = 6;
 
 function DraggableDisc({record}) {
@@ -271,4 +291,3 @@ function App() {
 }
 
 createRoot(document.getElementById('root')).render(<App/>);
-
