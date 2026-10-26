@@ -26,7 +26,7 @@ function DraggableDisc({record}) {
 function RecordSleeve({record,index,selected,onSelect,artwork}) {
   return <div className={`record ${selected?'selected':''}`} style={{'--cover':record.color,zIndex:index+1}}>
     <DraggableDisc record={record}/>
-    <button type="button" className={`cover-art ${artwork?'has-art':''}`} style={artwork?{backgroundImage:`url("${artwork}")`,backgroundSize:'cover',backgroundPosition:'center'}:undefined} aria-label={`Play ${record.title} by ${record.artist}, ${record.genre}`} onClick={onSelect}>
+    <button type="button" className={`cover-art ${artwork?'has-art':''}`} style={artwork?{backgroundImage:`url("${artwork}")`,backgroundSize:'cover',backgroundPosition:'center'}:undefined} aria-label={`Load ${record.title} by ${record.artist}, ${record.genre} onto the turntable`} onClick={onSelect}>
       {!artwork&&<span className="cover-glyph">{record.glyph}</span>}
       <span className="cover-footer"><strong>{record.title}</strong><small>{record.genre} / {record.artist}</small></span>
     </button>
@@ -57,7 +57,7 @@ function App() {
   const [artworkById,setArtworkById] = useState({});
   const [track,setTrack] = useState(null);
   const [deckStatus,setDeckStatus] = useState('waiting for a record');
-  const [note,setNote] = useState('Pull a sleeve from the crate. Drag just the record to the deck—or tap a sleeve—to load a 30-second preview.');
+  const [note,setNote] = useState('Click a sleeve to load its preview, then press play on the turntable. Or drag its record to the deck to start listening.');
   const [playing,setPlaying] = useState(false);
   const [progress,setProgress] = useState(0);
   const [elapsed,setElapsed] = useState('0:00');
@@ -122,7 +122,7 @@ function App() {
     setJazzOn(true);
   };
 
-  const loadRecord = async (record) => {
+  const loadRecord = async (record,{autoplay=true}={}) => {
     const request = ++requestRef.current;
     setSelected(record); setTrack(null); setPlaying(false); setProgress(0); setElapsed('0:00');
     setDeckStatus('finding the groove…');
@@ -141,9 +141,9 @@ function App() {
       setTrack(match); setStoreLink(match.trackViewUrl||match.collectionViewUrl||'https://www.apple.com/apple-music/');
       audio.src = match.previewUrl; audio.load();
       setDeckStatus('record on deck');
-      setNote('Record loaded. Use the controls to play or pause the 30-second preview. The track links to Apple Music.');
-      showToast('Record on the deck — enjoy the spin');
-      audio.play().then(()=>setPlaying(true)).catch(()=>setNote('Record loaded. Your browser blocked autoplay, so press play to start the 30-second preview.'));
+      setNote(autoplay?'Record loaded. Use the controls to play or pause the 30-second preview. The track links to Apple Music.':'Record loaded. Press play on the turntable when you’re ready to hear the 30-second preview.');
+      showToast(autoplay?'Record on the deck — enjoy the spin':'Record loaded — press play when ready');
+      if (autoplay) audio.play().then(()=>setPlaying(true)).catch(()=>setNote('Record loaded. Your browser blocked autoplay, so press play to start the 30-second preview.'));
     } catch {
       if (request!==requestRef.current) return;
       setDeckStatus('no preview found');
@@ -158,7 +158,7 @@ function App() {
     audio.pause(); audio.currentTime=0; audio.removeAttribute('src'); audio.load();
     setSelected(null); setTrack(null); setPlaying(false); setProgress(0); setElapsed('0:00');
     setDeckStatus('waiting for a record');
-    setNote('Pull a sleeve from the crate. Drag just the record to the deck—or tap a sleeve—to load a 30-second preview.');
+    setNote('Click a sleeve to load its preview, then press play on the turntable. Or drag its record to the deck to start listening.');
     setStoreLink('https://www.apple.com/apple-music/');
     showToast('Record returned to the crate');
   };
@@ -230,7 +230,7 @@ function App() {
       <section className="studio" id="dig" aria-label="Record crate and turntable">
         <div className="crate-column"><div className="section-head"><h2>01 / Pick a record</h2><small>6 cuts in the crate</small></div>
           <div className="filters" aria-label="Filter by genre">{genres.map(genre=><button key={genre} className={`filter ${filter===genre?'active':''}`} onClick={()=>setFilter(genre)}>{genre==='All'?'All sounds':genre}</button>)}</div>
-          <div className="crate-wrap"><div className="crate" aria-label="A crate of records. Tap a sleeve or drag a record to the turntable."><span className="crate-label">Fresh pulls / 001</span><div className="records">{visibleRecords.map((record,index)=><RecordSleeve key={record.id} record={record} index={index} artwork={artworkById[record.id]} selected={selected?.id===record.id} onSelect={()=>loadRecord(record)}/>)}</div><span className="crate-hint">tap a sleeve / drag the record to the deck</span></div></div>
+          <div className="crate-wrap"><div className="crate" aria-label="A crate of records. Click a sleeve to load it, or drag the record to the turntable to play its preview."><span className="crate-label">Fresh pulls / 001</span><div className="records">{visibleRecords.map((record,index)=><RecordSleeve key={record.id} record={record} index={index} artwork={artworkById[record.id]} selected={selected?.id===record.id} onSelect={()=>loadRecord(record,{autoplay:false})}/>)}</div><span className="crate-hint">click a sleeve to load / drag the record to the deck</span></div></div>
           <div className="crate-caption"><span>Record store rules apply</span><span>Handle with care ☺</span></div>
         </div>
         <div className="right-col"><div className="section-head"><h2>02 / Give it a spin</h2><small>30 sec preview</small></div><Player state={{selected,track,playing,progress,elapsed,deckStatus,storeLink,trackTitle:track?.trackName||selected?.title||'The deck is yours.',artistName:track?.artistName||selected?.artist||'Pick a sleeve from the crate'}} actions={{stop,toggle}}/><p className="note" aria-live="polite">{note}</p></div>
@@ -243,3 +243,4 @@ function App() {
 }
 
 createRoot(document.getElementById('root')).render(<App/>);
+
