@@ -2,6 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {DragDropProvider, useDraggable, useDroppable} from '@dnd-kit/react';
 import {Feedback, PointerActivationConstraints, PointerSensor} from '@dnd-kit/dom';
+import DinoGame from './DinoGame.jsx';
 import './style.css';
 
 const crateCuts = [
@@ -36,6 +37,31 @@ const records = crateCuts.map(([title,artist,genre],index)=>({
 }));
 const genres = ['All','Jazz','Hip-Hop','Indie','Electronic','Funk','Soul','Rock','Pop','R&B','Reggae','Latin','Classical','Ambient','Blues','Country','Disco','House','Techno','Metal','Punk','Alternative','K-Pop','Afrobeats','Reggaeton','Folk','Shoegaze','Drum & Bass','Gospel','Trip-Hop','Grunge','Soundtrack','World','Singer-Songwriter'];
 const recordsPerPage = 6;
+const uiSoundProfiles = {
+  button:{wave:'square',startFrequency:820,endFrequency:560,duration:.045,volume:.018},
+  filter:{wave:'square',startFrequency:1200,endFrequency:700,duration:.035,volume:.014},
+  page:{wave:'triangle',startFrequency:280,endFrequency:90,duration:.095,volume:.04},
+  deck:{wave:'triangle',startFrequency:380,endFrequency:170,duration:.08,volume:.035},
+  sleeve:{wave:'triangle',startFrequency:180,endFrequency:720,duration:.11,volume:.035},
+  arcade:{wave:'square',startFrequency:420,endFrequency:980,duration:.075,volume:.022},
+};
+
+function playUiSound(context,kind) {
+  const profile=uiSoundProfiles[kind]||uiSoundProfiles.button;
+  const now=context.currentTime;
+  const oscillator=context.createOscillator();
+  const envelope=context.createGain();
+  oscillator.type=profile.wave;
+  oscillator.frequency.setValueAtTime(profile.startFrequency,now);
+  oscillator.frequency.exponentialRampToValueAtTime(profile.endFrequency,now+profile.duration);
+  envelope.gain.setValueAtTime(.0001,now);
+  envelope.gain.exponentialRampToValueAtTime(profile.volume,now+.006);
+  envelope.gain.exponentialRampToValueAtTime(.0001,now+profile.duration);
+  oscillator.connect(envelope);
+  envelope.connect(context.destination);
+  oscillator.start(now);
+  oscillator.stop(now+profile.duration);
+}
 
 function DraggableDisc({record}) {
   const {ref,isDragging} = useDraggable({
@@ -74,7 +100,12 @@ function App() {
   const audioRef = useRef(null);
   const requestRef = useRef(0);
   const jazzContextRef = useRef(null);
+  const jazzMasterRef = useRef(null);
   const jazzTimerRef = useRef(null);
+  const jazzStartingRef = useRef(false);
+  const jazzRequestRef = useRef(0);
+  const ambientUnlockedRef = useRef(false);
+  const clickFeedbackTimersRef = useRef(new WeakMap());
   const [filter,setFilter] = useState('All');
   const [page,setPage] = useState(0);
   const [pageDirection,setPageDirection] = useState('next');
@@ -90,13 +121,24 @@ function App() {
   const [elapsed,setElapsed] = useState('0:00');
   const [toast,setToast] = useState('');
   const [storeLink,setStoreLink] = useState('https://www.apple.com/apple-music/');
-  const [jazzOn,setJazzOn] = useState(false);
   const toastTimer = useRef(null);
 
   const showToast = (message) => {
     setToast(message);
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(()=>setToast(''),2600);
+  };
+
+  const playInteractionSound = (kind) => {
+    const context=jazzContextRef.current;
+    if (!ambientUnlockedRef.current||!context) return;
+    if (context.state==='running') {
+      playUiSound(context,kind);
+      return;
+    }
+    context.resume()
+      .then(()=>{if (context.state==='running') playUiSound(context,kind);})
+      .catch(reportAmbientError);
   };
 
   const pullSleeve = (record) => {
@@ -110,23 +152,46 @@ function App() {
     setPage(current=>Math.max(0,Math.min(pageCount-1,current+(direction==='next'?1:-1))));
   };
 
-  const toggleJazz = async () => {
-    if (jazzOn) {
-      clearInterval(jazzTimerRef.current);
-      jazzTimerRef.current=null;
-      jazzContextRef.current?.close();
-      jazzContextRef.current=null;
-      setJazzOn(false);
+  const pauseJazz = () => {
+    jazzRequestRef.current++;
+    clearInterval(jazzTimerRef.current);
+    jazzTimerRef.current=null;
+    const context=jazzContextRef.current;
+    const master=jazzMasterRef.current;
+    if (context&&master) {
+      master.gain.cancelScheduledValues(context.currentTime);
+      master.gain.setTargetAtTime(.0001,context.currentTime,.08);
+    }
+  };
+
+  const startJazz = async () => {
+    if (!ambientUnlockedRef.current||!audioRef.current?.paused||jazzTimerRef.current||jazzStartingRef.current) return;
+    const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+    if (!AudioContextClass) {
+      ambientUnlockedRef.current=false;
+      showToast('Ambient music is not available in this browser');
       return;
     }
-    const AudioContextClass=window.AudioContext||window.webkitAudioContext;
-    if (!AudioContextClass) {showToast('Ambient audio is not available in this browser');return;}
-    const context=new AudioContextClass();
-    await context.resume();
-    const master=context.createGain();
-    master.gain.value=.42;
-    master.connect(context.destination);
-    jazzContextRef.current=context;
+    let context=jazzContextRef.current;
+    if (!context) {
+      context=new AudioContextClass();
+      const master=context.createGain();
+      master.gain.value=.0001;
+      master.connect(context.destination);
+      jazzContextRef.current=context;
+      jazzMasterRef.current=master;
+    }
+    jazzStartingRef.current=true;
+    const request=jazzRequestRef.current;
+    try {
+      await context.resume();
+    } finally {
+      jazzStartingRef.current=false;
+    }
+    if (request!==jazzRequestRef.current||!audioRef.current?.paused||jazzTimerRef.current) return;
+    const master=jazzMasterRef.current;
+    master.gain.cancelScheduledValues(context.currentTime);
+    master.gain.setTargetAtTime(.42,context.currentTime,.12);
     const progression=[
       {bass:65.41,chord:[261.63,329.63,392,493.88,587.33]},
       {bass:55,chord:[220,261.63,329.63,392,493.88]},
@@ -157,8 +222,58 @@ function App() {
     };
     playBar();
     jazzTimerRef.current=window.setInterval(playBar,3900);
-    setJazzOn(true);
   };
+
+  const reportAmbientError = () => {
+    showToast('Ambient music could not start in this browser');
+  };
+
+  useEffect(()=>{
+    const unlockAmbient=()=>{
+      document.removeEventListener('pointerdown',unlockAmbient);
+      document.removeEventListener('keydown',unlockAmbient);
+      ambientUnlockedRef.current=true;
+      if (audioRef.current?.paused) startJazz().catch(reportAmbientError);
+    };
+    document.addEventListener('pointerdown',unlockAmbient,{capture:true,once:true});
+    document.addEventListener('keydown',unlockAmbient,{capture:true,once:true});
+    return ()=>{
+      document.removeEventListener('pointerdown',unlockAmbient,true);
+      document.removeEventListener('keydown',unlockAmbient,true);
+    };
+  },[]);
+
+  useEffect(()=>{
+    if (playing) pauseJazz();
+    else if (ambientUnlockedRef.current) startJazz().catch(reportAmbientError);
+  },[playing]);
+
+  useEffect(()=>{
+    const handleClick=(event)=>{
+      if (!(event.target instanceof Element)) return;
+      const target=event.target.closest('button, a[href], [role="button"], .game-canvas');
+      if (!target||target.matches(':disabled')) return;
+
+      const kind=target.classList.contains('cover-art')?'sleeve'
+        :target.classList.contains('filter')?'filter'
+          :target.closest('.crate-pager')?'page'
+            :target.classList.contains('control')?'deck'
+              :target.classList.contains('game-canvas')||target.classList.contains('game-start')||target.classList.contains('game-jump')?'arcade'
+                :'button';
+      playInteractionSound(kind);
+      target.classList.remove('click-flash');
+      void target.offsetWidth;
+      target.classList.add('click-flash');
+      clearTimeout(clickFeedbackTimersRef.current.get(target));
+      const timer=window.setTimeout(()=>{
+        target.classList.remove('click-flash');
+        clickFeedbackTimersRef.current.delete(target);
+      },240);
+      clickFeedbackTimersRef.current.set(target,timer);
+    };
+    document.addEventListener('click',handleClick,true);
+    return ()=>document.removeEventListener('click',handleClick,true);
+  },[]);
 
   const loadRecord = async (record,{autoplay=true}={}) => {
     const request = ++requestRef.current;
@@ -182,7 +297,13 @@ function App() {
       setDeckStatus('record on deck');
       setNote(autoplay?'Record loaded. Use the controls to play or pause the 30-second preview. The track links to Apple Music.':'Record loaded. Press play on the turntable when you’re ready to hear the 30-second preview.');
       showToast(autoplay?'Record on the deck — enjoy the spin':'Record loaded — press play when ready');
-      if (autoplay) audio.play().then(()=>setPlaying(true)).catch(()=>setNote('Record loaded. Your browser blocked autoplay, so press play to start the 30-second preview.'));
+      if (autoplay) {
+        pauseJazz();
+        audio.play().then(()=>setPlaying(true)).catch(()=>{
+          setNote('Record loaded. Your browser blocked autoplay, so press play to start the 30-second preview.');
+          startJazz().catch(reportAmbientError);
+        });
+      }
     } catch {
       if (request!==requestRef.current) return;
       setDeckStatus('no preview found');
@@ -208,7 +329,11 @@ function App() {
     if (!track) return;
     if (audio.paused) {
       if (audio.currentTime>=30) audio.currentTime=0;
-      audio.play().then(()=>setPlaying(true)).catch(()=>setNote('Your browser blocked playback. Press play again to start the preview.'));
+      pauseJazz();
+      audio.play().then(()=>setPlaying(true)).catch(()=>{
+        setNote('Your browser blocked playback. Press play again to start the preview.');
+        startJazz().catch(reportAmbientError);
+      });
     } else {audio.pause();setPlaying(false);setDeckStatus('paused');}
   };
 
@@ -271,7 +396,7 @@ function App() {
       ? [new PointerActivationConstraints.Delay({value:250,tolerance:5})]
       : [new PointerActivationConstraints.Distance({value:5})]}),
   ]} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-    <header className="topbar"><a className="brand" href="#top" aria-label="Side B home">SIDE<span>B</span></a><div className="top-right"><span className="status"><i className="dot"/> crate open / 24-7</span><button type="button" className={`ambient-toggle ${jazzOn?'is-on':''}`} onClick={toggleJazz} aria-pressed={jazzOn}>♫ {jazzOn?'ambient jazz on':'play soft jazz'}</button><a href="#dig">start digging ↘</a><span>vol. 001</span></div></header>
+    <header className="topbar"><a className="brand" href="#top" aria-label="Side B home">SIDE<span>B</span></a><div className="top-right"><span className="status"><i className="dot"/> crate open / 24-7</span><a href="#dig">start digging ↘</a><span>vol. 001</span></div></header>
     <main id="top">
       <section className="hero" aria-labelledby="title"><div className="hero-kicker">a little less scrolling, a little more listening</div><h1 id="title">Find your<br/><span className="outline">side B.</span></h1><div className="hero-bottom"><p>Good music is hiding everywhere. <strong>Dig through the crate</strong>, pull a record, and give something new a spin.</p><span className="scribble">NO SKIP BUTTON<br/>FOR GOOD TASTE ↗</span></div></section>
       <div className="ticker" aria-hidden="true"><div className="ticker-track"><span>Dig deep <b>✳</b> Follow the groove <b>✳</b> Find your side B <b>✳</b> One more spin <b>✳</b> Dig deep <b>✳</b> Follow the groove <b>✳</b> Find your side B <b>✳</b> One more spin <b>✳</b></span><span>Dig deep <b>✳</b> Follow the groove <b>✳</b> Find your side B <b>✳</b> One more spin <b>✳</b> Dig deep <b>✳</b> Follow the groove <b>✳</b> Find your side B <b>✳</b> One more spin <b>✳</b></span></div></div>
@@ -285,6 +410,7 @@ function App() {
         <div className="right-col"><div className="section-head"><h2>02 / Give it a spin</h2><small>30 sec preview</small></div><Player state={{selected,track,playing,progress,elapsed,deckStatus,storeLink,trackTitle:track?.trackName||selected?.title||'The deck is yours.',artistName:track?.artistName||selected?.artist||'Pick a sleeve from the crate'}} actions={{stop,toggle}}/><p className="note" aria-live="polite">{note}</p></div>
       </section>
     </main>
+    <DinoGame onInteraction={playInteractionSound}/>
     <footer className="bottom"><strong>SIDE B™</strong><span>For the love of the deep cut.<br/>Built for curious ears.</span><a href="#top">Back to the top ↑</a></footer>
     <div className={`toast ${toast?'show':''}`} role="status" aria-live="polite">{toast}</div>
     <audio ref={audioRef} preload="none"/>

@@ -19,7 +19,7 @@
   <a href="https://github.com/DevdattaRane/side-b-crate/actions/workflows/pages.yml"><img alt="GitHub Pages deployment" src="https://github.com/DevdattaRane/side-b-crate/actions/workflows/pages.yml/badge.svg" /></a>
 </p>
 
-**Hard edges. Loud covers. No algorithm deciding what you should like.** Side B is a responsive, hands-on music explorer built around the familiar ritual of pulling a record and putting it on the deck.
+**Hard edges. Loud covers. No algorithm deciding what you should like.** Side B is a responsive, hands-on music explorer built around the familiar ritual of pulling a record and putting it on the deck, with a tiny crate-runner game waiting at the bottom of the page.
 
 ---
 
@@ -33,7 +33,7 @@ Filter by genre, then browse box by box. Pull a sleeve to reveal its vinyl. Drag
 
 **On a phone?** Tap a sleeve to pull the record. Press and hold the exposed disc, then drag it to the player. Swipe the genre strip to explore more styles; the crate switches to a readable two-column layout.
 
-Flip on **play soft jazz** for a quiet chord loop generated in your browser. It starts only when you ask it to.
+Quiet jazz plays between record previews once you interact with the page; browser autoplay rules require that first gesture. It fades out while a preview is playing and returns when the preview pauses or ends. After that first interaction, buttons and records make short, distinct synthesized clicks, and controls flash with a sharp pressed-state effect. When you reach the bottom, take a break in **Crate Runner**: help a pixel-art yellow dino jump over spikes with Space, ↑, a tap, or the on-screen button.
 
 > **THE RITUAL**  `FILTER → PULL → DROP → LISTEN`
 
@@ -45,7 +45,7 @@ Flip on **play soft jazz** for a quiet chord loop generated in your browser. It 
 - **Vite 8** — local development and production builds.
 - **dnd-kit** — drag the vinyl to the turntable, with touch input on mobile.
 - **Apple iTunes Search API** — album artwork, preview links, and store listings.
-- **Web Audio API** — the optional ambient-jazz loop.
+- **Web Audio API** — the ambient-jazz loop between previews and synthesized interaction sounds.
 - **GitHub Pages + GitHub Actions** — build and publish on pushes to `main`.
 
 Artwork is looked up as each box is browsed; previews stream from Apple’s returned preview URL and are not stored in this repository. An internet connection is required, and a preview or cover may not be available for every track. Loaded records link to their Apple Music or iTunes listing. Apple’s [iTunes Search API terms](https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/iTuneSearchAPI/) apply to its artwork and preview audio.
@@ -80,7 +80,7 @@ The collection lives in [`src/main.jsx`](src/main.jsx):
 - Add each new style to `genres` to give it a filter button.
 - Tune the sleeve palette in `sleeveColors`.
 - Change the six-sleeve box size with `recordsPerPage`.
-- Restyle the wood, type, motion, and turntable in [`src/style.css`](src/style.css).
+- Adjust the warm cream, lime, pink, and charcoal palette, keycap buttons, type, motion, and turntable in [`src/style.css`](src/style.css).
 
 Keep genre names in `genres` and `crateCuts` identical so the filters know where every record belongs.
 
